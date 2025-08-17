@@ -86,6 +86,11 @@ const quoteSchema = new mongoose.Schema({
 const Quote = mongoose.model('Quote', quoteSchema);
 
 // --- Routes ---
+
+app.get('/', async (req, res) => {
+
+  res.send('WELCOME To my first API');
+});
 // 1️⃣ Get all quotes
 app.get('/all', async (req, res) => {
   const quotes = await Quote.find();
