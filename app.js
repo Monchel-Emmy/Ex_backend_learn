@@ -247,60 +247,89 @@
 
 
 
-
-const http = require('http');
+// app.js
+require('dotenv').config(); // Load environment variables from .env
+const express = require('express');
 const mongoose = require('mongoose');
 
-const express = require('express');
 const app = express();
+const PORT = process.env.PORT || 2000;
+
+// Middleware
 app.use(express.json());
 
-mongoose.connect('mongodb://127.0.0.1:27017/Studentdb');
-const db = mongoose.connection;
-db.on('err',()=>{
-    console.error(err)
-})
-db.once('open',()=> console.log('db is connected welll'))
 
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('Connected to MongoDB!'))
+  .catch(err => console.error('Connection error:', err));
+
+
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'Connection error:'));
+db.once('open', () => console.log('✅ Connected to MongoDB Atlas!'));
+
+// Schema & Model
 const studentSchema = new mongoose.Schema({
     name: String,
-    age : Number,
-    phone : Number,
-})
+    age: Number,
+    phone: String 
+});
 
-const Student = mongoose.model('Student',studentSchema);
+const Student = mongoose.model('Student', studentSchema);
 
-app.get('/',(req,res)=>{
-Student.find()
- .then((result)=>{
-console.log(result)
-res.send(result)
- })
- .catch((err)=>console.error(err))
-})
+// Routes
 
-app.post('/student',async(req,res) =>{
+// 1️⃣ Get all students
+app.get('/', async (req, res) => {
+    try {
+        const students = await Student.find();
+        res.json(students);
+        console.log('Sent all students');
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
 
-    const { name,age,phone } = req.body;
-    const newStudent = new Student({name,age,phone})
-    await newStudent.save().then(()=> console.log('saved',{saved : newStudent}))
-      res.json({ message: 'Quote added!', newStudent });
-})
+// 2️⃣ Add new student
+app.post('/student', async (req, res) => {
+    try {
+        const { name, age, phone } = req.body;
+        const newStudent = new Student({ name, age, phone });
+        await newStudent.save();
+        res.json({ message: 'Student added!', newStudent });
+        console.log('Saved:', newStudent);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Error adding student' });
+    }
+});
 
-app.post('/login', async(req,res) =>{
-    
-    const { name} = req.body;
-    const student = await Student.findOne({name});
-   if(student){
-     res.json({ message: 'all details are ', name: student.name, age: student.age });
-    console.log( name,'loged in')
-   }else{
-    res.json({ message: 'not found ', name: student.name, age: student.age });
-    console.log( name,'user not found')
-   }
-})
+// 3️⃣ Login
+app.post('/login', async (req, res) => {
+    try {
+        const { name } = req.body;
+        const student = await Student.findOne({ name });
 
-app.listen(2000,()=>{
-    console.log('Now server is running well')
-})
+        if (student) {
+            res.json({
+                message: 'Logged in successfully!',
+                name: student.name,
+                age: student.age,
+                phone: student.phone
+            });
+            console.log(name, 'logged in');
+        } else {
+            res.json({ message: 'User not found' });
+            console.log(name, 'user not found');
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 
+// Start server
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
