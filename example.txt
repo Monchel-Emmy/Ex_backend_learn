@@ -1,0 +1,6 @@
+[
+  {
+    "quote": "Talk is cheap. Show me the code.",
+    "author": "Linus Torvalds"
+  }
+]
